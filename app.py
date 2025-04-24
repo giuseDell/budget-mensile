@@ -57,7 +57,7 @@ if pagina == "📊 Riepilogo":
                     elif tipo.lower() == "spesa":
                         spese += imp
                 except ValueError:
-                continue
+                    continue
         risparmio = entrate - spese
 
     col1, col2, col3 = st.columns(3)
