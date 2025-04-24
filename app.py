@@ -47,7 +47,7 @@ if not st.session_state.logged_in:
                 st.session_state.logged_in = True
                 st.session_state.nome_cognome = f"{nome.strip().title()} {cognome.strip().title()}"
                 st.success("Accesso riuscito!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Credenziali errate.")
     else:
@@ -84,7 +84,7 @@ else:
                     oggi = datetime.datetime.now().strftime("%Y-%m-%d")
                     sheet_dati.append_row([oggi, nome_cognome, tipo, descrizione, str(imp)])
                     st.success(f"{tipo} registrata: {descrizione} - {imp} €")
-                    st.experimental_rerun()
+                    st.rerun()
                 except:
                     st.error("Importo non valido")
 
@@ -141,4 +141,4 @@ else:
     if st.button("🔓 Logout"):
         st.session_state.logged_in = False
         st.session_state.nome_cognome = ""
-        st.experimental_rerun()
+        st.rerun()
