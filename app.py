@@ -119,27 +119,36 @@ else:
             c2.metric("Spese", f"{spese:.2f} €")
             c3.metric("Risparmio", f"{saldo:.2f} €", delta=f"{saldo:.2f} €")
 
-    # === 📋 DETTAGLIO VOCI - tabella interattiva ===
+    # === 📋 DETTAGLIO VOCI - tabella manuale con pulsanti ===
     with tabs[1]:
         st.title("📋 Dettaglio voci")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
 
         if mese:
             dettagli = [r for r in dati_utente if r[0].startswith(mese)]
-            df = pd.DataFrame(dettagli, columns=["Data", "Utente", "Tipo", "Descrizione", "Importo"])
-            df["Importo"] = df["Importo"].astype(str).str.replace(",", ".").astype(float)
 
-            # Mostra tabella
-            df_stile = df.style.applymap(
-                lambda v: "color: green" if v == "Entrata" else "color: red", subset=["Tipo"]
-            )
-            st.dataframe(df_stile, use_container_width=True)
+            if dettagli:
+                # Intestazioni
+                col1, col2, col3, col4, _, col6 = st.columns([2, 2, 3, 2, 1, 1])
+                col1.markdown("**Data**")
+                col2.markdown("**Tipo**")
+                col3.markdown("**Descrizione**")
+                col4.markdown("**Importo**")
+                col6.markdown("")
 
-            # Elimina ogni voce
-            for idx, r in enumerate(dettagli):
-                col1, col2 = st.columns([10, 1])
-                with col2:
-                    if st.button("❌", key=f"del_{idx}"):
+                for idx, r in enumerate(dettagli):
+                    data, utente, tipo, descr, imp = r
+                    imp_float = float(imp.replace(",", "."))
+                    colore = "green" if tipo.lower() == "entrata" else "red"
+                    data_fmt = datetime.datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
+
+                    c1, c2, c3, c4, _, c6 = st.columns([2, 2, 3, 2, 1, 1])
+                    c1.write(data_fmt)
+                    c2.markdown(f"<span style='color:{colore}'>{tipo}</span>", unsafe_allow_html=True)
+                    c3.write(descr)
+                    c4.write(f"{imp_float:.2f} €")
+
+                    if c6.button("❌", key=f"del_{idx}"):
                         tutte = sheet_dati.get_all_values()
                         for i, row in enumerate(tutte[1:]):
                             if row == r:
