@@ -16,12 +16,10 @@ sheet = client.open_by_key(SHEET_ID).sheet1
 # Lettura dei dati
 righe = sheet.get_all_values()
 header, dati = righe[0], righe[1:] if len(righe) > 1 else []
-
-# Mesi disponibili
 mesi = sorted(set(r[0][:7] for r in dati))  # YYYY-MM
 
-# Navigazione a tab
-tab1, tab2 = st.tabs(["📊 Riepilogo", "📋 Dettaglio voci"])
+# Tabs: Riepilogo, Dettaglio, Google Sheet
+tab1, tab2, tab3 = st.tabs(["📊 Riepilogo", "📋 Dettaglio voci", "📄 Google Sheet"])
 
 # ↩️ Tab 1 – Riepilogo e inserimento
 with tab1:
@@ -96,3 +94,12 @@ with tab2:
             )
     else:
         st.info("Nessuna voce registrata per questo mese.")
+
+# 📄 Tab 3 – Link al Google Sheet
+with tab3:
+    st.title("📄 Google Sheet")
+    st.markdown("Apri direttamente il file per modifiche manuali o salvataggi:")
+    st.markdown(
+        "[🔗 Vai al Google Sheet](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
+        unsafe_allow_html=True
+    )
