@@ -17,10 +17,10 @@ sheet = client.open_by_key(SHEET_ID).sheet1
 righe = sheet.get_all_values()
 header, dati = righe[0], righe[1:] if len(righe) > 1 else []
 
-# Navigazione
+# Navigazione tra pagine
 pagina = st.sidebar.selectbox("📁 Seleziona pagina", ["📊 Riepilogo", "📋 Dettaglio voci"])
 
-# Ricava i mesi disponibili
+# Mesi disponibili
 mesi = sorted(set(r[0][:7] for r in dati))  # YYYY-MM
 
 # ↩️ Pagina 1 – Riepilogo e inserimento
@@ -40,14 +40,13 @@ if pagina == "📊 Riepilogo":
             sheet.append_row([oggi, tipo, descrizione, importo])
             st.success(f"{tipo} aggiunta: {descrizione} - {importo} €")
 
-   # Calcolo riepilogo
-   entrate = spese = 0.0
+    # 📈 Riepilogo
+    entrate = spese = 0.0
+    st.subheader("📈 Riepilogo")
+    mese_selezionato = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
 
-   st.subheader("📈 Riepilogo")
-   mese_selezionato = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
-
-   if mese_selezionato:
-       for r in dati:
+    if mese_selezionato:
+        for r in dati:
             data, tipo, descr, imp = r
             if data.startswith(mese_selezionato):
                 try:
@@ -60,10 +59,10 @@ if pagina == "📊 Riepilogo":
                     continue
         risparmio = entrate - spese
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Entrate", f"{entrate:.2f} €")
-    col2.metric("Spese", f"{spese:.2f} €")
-    col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Entrate", f"{entrate:.2f} €")
+        col2.metric("Spese", f"{spese:.2f} €")
+        col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
 
 # ↪️ Pagina 2 – Dettaglio voci
 elif pagina == "📋 Dettaglio voci":
@@ -71,7 +70,7 @@ elif pagina == "📋 Dettaglio voci":
     st.markdown("Consulta tutte le voci registrate per il mese selezionato.")
 
     # 📅 Selezione mese
-    mese_selezionato = st.selectbox("Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
+    mese_selezionato = st.selectbox("📅 Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
 
     voci_filtrate = []
     if mese_selezionato:
