@@ -66,14 +66,15 @@ if mese_selezionato:
     col2.metric("Spese", f"{spese:.2f} €")
     col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
 
-    # 📋 Mostra elenco voci
-  # 📋 Mostra elenco voci
+# 📋 Mostra elenco voci
 st.subheader("📋 Dettaglio voci")
 if voci_filtrate:
     for r in voci_filtrate:
+        data_originale = datetime.datetime.strptime(r[0], "%Y-%m-%d")
+        data_formattata = data_originale.strftime("%d:%m:%Y")
         colore = "green" if r[1].lower() == "entrata" else "red"
         st.markdown(
-            f"<span style='color:{colore}; font-weight:bold'>{r[0]} - {r[1]}: {r[2]} ({r[3]} €)</span>",
+            f"<span style='color:{colore}'>{data_formattata} | {r[2]} | {r[3]} €</span>",
             unsafe_allow_html=True
         )
     else:
