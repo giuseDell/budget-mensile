@@ -1,42 +1,44 @@
 import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import datetime
 
-# Inizializzazione dello stato della sessione
-if "income" not in st.session_state:
-    st.session_state.income = 0.0
+# Configura le credenziali dai secrets
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds_dict = st.secrets["google"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
+client = gspread.authorize(creds)
 
-if "expenses" not in st.session_state:
-    st.session_state.expenses = []
+# Sostituisci con il nome reale del tuo Google Sheet
+SHEET_NAME = "BudgetMensile"
+sheet = client.open(SHEET_NAME).sheet1
 
-# Input del reddito mensile
-st.title("📊 Gestione Budget Mensile")
-st.header("1. Inserisci il tuo reddito")
-income = st.number_input("Reddito (€)", min_value=0.0, step=100.0, value=st.session_state.income)
-if st.button("Salva Reddito"):
-    st.session_state.income = income
-    st.success(f"Reddito aggiornato: {income} €")
+# Funzione per aggiungere una voce
+def aggiungi_voce(tipo, descrizione, importo):
+    oggi = datetime.datetime.now().strftime("%Y-%m-%d")
+    sheet.append_row([oggi, tipo, descrizione, importo])
 
-# Aggiunta di una spesa
-st.header("2. Aggiungi una spesa")
-with st.form(key="expense_form"):
-    expense_name = st.text_input("Nome della spesa")
-    expense_amount = st.number_input("Importo (€)", min_value=0.0, step=10.0)
-    submit_button = st.form_submit_button("Aggiungi Spesa")
-    if submit_button:
-        st.session_state.expenses.append({"name": expense_name, "amount": expense_amount})
-        st.success(f"Aggiunta spesa: {expense_name} - {expense_amount} €")
+# Interfaccia utente
+st.title("📊 Budget Mensile (Google Sheets)")
+st.markdown("Registra spese e entrate direttamente su Google Sheets")
 
-# Riepilogo del budget
-st.header("3. Riepilogo")
-total_expenses = sum(e["amount"] for e in st.session_state.expenses)
-balance = st.session_state.income - total_expenses
+tipo = st.selectbox("Tipo di voce", ["Entrata", "Spesa"])
+descrizione = st.text_input("Descrizione")
+importo = st.number_input("Importo (€)", step=1.0)
 
-st.metric("Reddito Mensile", f"{st.session_state.income} €")
-st.metric("Spese Totali", f"{total_expenses} €")
-st.metric("Saldo Rimanente", f"{balance} €")
+if st.button("Aggiungi"):
+    if descrizione and importo:
+        aggiungi_voce(tipo, descrizione, importo)
+        st.success(f"{tipo} aggiunta: {descrizione} - {importo} €")
+    else:
+        st.error("Compila tutti i campi")
 
-st.subheader("📋 Spese Dettagliate")
-if st.session_state.expenses:
-    for e in st.session_state.expenses:
-        st.write(f"- {e['name']}: {e['amount']} €")
+# Visualizza le ultime 10 righe
+st.subheader("📋 Ultime voci registrate")
+righe = sheet.get_all_values()
+header, dati = righe[0], righe[1:]
+if dati:
+    for r in dati[-10:]:
+        st.write(f"{r[0]} - {r[1]}: {r[2]} ({r[3]} €)")
 else:
-    st.info("Nessuna spesa ancora registrata.")
+    st.info("Nessuna voce presente nel foglio.")
