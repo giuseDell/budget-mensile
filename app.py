@@ -40,14 +40,14 @@ if pagina == "📊 Riepilogo":
             sheet.append_row([oggi, tipo, descrizione, importo])
             st.success(f"{tipo} aggiunta: {descrizione} - {importo} €")
 
-    # 📅 Selezione mese
-    st.subheader("📅 Seleziona mese per il riepilogo")
-    mese_selezionato = st.selectbox("Mese", mesi[::-1]) if mesi else None
+   # Calcolo riepilogo
+   entrate = spese = 0.0
 
-    # Calcolo riepilogo
-    entrate = spese = 0.0
-    if mese_selezionato:
-        for r in dati:
+   st.subheader("📈 Riepilogo")
+   mese_selezionato = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
+
+   if mese_selezionato:
+       for r in dati:
             data, tipo, descr, imp = r
             if data.startswith(mese_selezionato):
                 try:
@@ -57,14 +57,13 @@ if pagina == "📊 Riepilogo":
                     elif tipo.lower() == "spesa":
                         spese += imp
                 except ValueError:
-                    continue
+                continue
         risparmio = entrate - spese
 
-        st.subheader("📈 Riepilogo")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Entrate", f"{entrate:.2f} €")
-        col2.metric("Spese", f"{spese:.2f} €")
-        col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Entrate", f"{entrate:.2f} €")
+    col2.metric("Spese", f"{spese:.2f} €")
+    col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
 
 # ↪️ Pagina 2 – Dettaglio voci
 elif pagina == "📋 Dettaglio voci":
