@@ -18,7 +18,7 @@ righe = sheet.get_all_values()
 header, dati = righe[0], righe[1:] if len(righe) > 1 else []
 
 # Navigazione tra pagine
-pagina = st.sidebar.selectbox("📁 Seleziona pagina", ["📊 Riepilogo", "📋 Dettaglio voci"])
+pagina = st.sidebar.radio("📁 Navigazione", ["📊 Riepilogo", "📋 Dettaglio voci"])
 
 # Mesi disponibili
 mesi = sorted(set(r[0][:7] for r in dati))  # YYYY-MM
