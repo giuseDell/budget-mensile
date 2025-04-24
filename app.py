@@ -25,7 +25,12 @@ def login(nome, cognome, password):
     return False
 
 def registra(nome, cognome, password):
+    records = sheet_utenti.get_all_records()
+    for r in records:
+        if r["nome"].strip().lower() == nome.strip().lower() and r["cognome"].strip().lower() == cognome.strip().lower():
+            return False  # già registrato
     sheet_utenti.append_row([nome, cognome, password])
+    return True
 
 # === SESSIONE ===
 if "logged_in" not in st.session_state:
@@ -52,19 +57,28 @@ if not st.session_state.logged_in:
                 st.error("Credenziali errate.")
     else:
         if st.button("Registrati"):
-            registra(nome.strip().title(), cognome.strip().title(), password)
-            st.success("Registrazione completata! Ora effettua il login.")
+            successo = registra(nome.strip().title(), cognome.strip().title(), password)
+            if successo:
+                st.success("Registrazione completata! Ora effettua il login.")
+            else:
+                st.warning("Utente già registrato.")
 
 # === APP AUTENTICATA ===
 else:
-    tabs = st.tabs(["📊 Riepilogo", "📋 Dettaglio", "📄 Google Sheet"])
     nome_cognome = st.session_state.nome_cognome
 
+    # Tabs dinamiche
+    tab_titles = ["📊 Riepilogo", "📋 Dettaglio"]
+    if nome_cognome == "Giuseppe Dell'Ali":
+        tab_titles.append("📄 Google Sheet")
+
+    tabs = st.tabs(tab_titles)
+
+    # Carica dati personali
     tutte_le_righe = sheet_dati.get_all_values()
     header = tutte_le_righe[0]
     righe = tutte_le_righe[1:]
     dati_utente = [r for r in righe if r[1] == nome_cognome]
-
     mesi = sorted(set(r[0][:7] for r in dati_utente))
 
     # === 📊 Riepilogo ===
@@ -80,13 +94,13 @@ else:
             invia = st.form_submit_button("Aggiungi")
             if invia and descrizione and importo:
                 try:
-                    imp = float(importo.replace(",", "."))
+                    imp = float(importo.replace(",", ".").replace("€", "").strip())
                     oggi = datetime.datetime.now().strftime("%Y-%m-%d")
                     sheet_dati.append_row([oggi, nome_cognome, tipo, descrizione, str(imp)])
                     st.success(f"{tipo} registrata: {descrizione} - {imp} €")
                     st.rerun()
-                except:
-                    st.error("Importo non valido")
+                except Exception as e:
+                    st.error(f"Importo non valido: {e}")
 
         st.subheader("📈 Riepilogo")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
@@ -96,7 +110,7 @@ else:
             for r in dati_utente:
                 if r[0].startswith(mese):
                     try:
-                        imp = float(r[4].replace(",", "."))
+                        imp = float(r[4].replace(",", ".").replace("€", "").strip())
                         if r[2].lower() == "entrata":
                             entrate += imp
                         elif r[2].lower() == "spesa":
@@ -109,7 +123,7 @@ else:
             c2.metric("Spese", f"{spese:.2f} €")
             c3.metric("Risparmio", f"{saldo:.2f} €", delta=f"{saldo:.2f} €")
 
-    # === 📋 Dettaglio voci ===
+    # === 📋 Dettaglio ===
     with tabs[1]:
         st.title("📋 Dettaglio voci")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
@@ -118,7 +132,7 @@ else:
             for r in dati_utente:
                 if r[0].startswith(mese):
                     try:
-                        imp = float(r[4].replace(",", "."))
+                        imp = float(r[4].replace(",", ".").replace("€", "").strip())
                         data = datetime.datetime.strptime(r[0], "%Y-%m-%d").strftime("%d:%m:%Y")
                         colore = "green" if r[2].lower() == "entrata" else "red"
                         st.markdown(
@@ -128,16 +142,17 @@ else:
                     except:
                         continue
 
-    # === 📄 Google Sheet ===
-    with tabs[2]:
-        st.title("📄 Google Sheet")
-        st.markdown("Puoi modificare il file manualmente qui:")
-        st.markdown(
-            "[🔗 Vai al foglio completo su Google Sheets](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
-            unsafe_allow_html=True
-        )
+    # === 📄 Google Sheet (solo Giuseppe) ===
+    if "📄 Google Sheet" in tab_titles:
+        with tabs[2]:
+            st.title("📄 Google Sheet")
+            st.markdown("Puoi modificare il file manualmente qui:")
+            st.markdown(
+                "[🔗 Vai al foglio completo su Google Sheets](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
+                unsafe_allow_html=True
+            )
 
-    # Logout
+    # 🔓 Logout
     if st.button("🔓 Logout"):
         st.session_state.logged_in = False
         st.session_state.nome_cognome = ""
