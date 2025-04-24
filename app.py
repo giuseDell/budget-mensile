@@ -9,9 +9,9 @@ creds_dict = st.secrets["google"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope)
 client = gspread.authorize(creds)
 
-# Sostituisci con il nome reale del tuo Google Sheet
-SHEET_NAME = "Budget-Annuale"
-sheet = client.open(SHEET_NAME).sheet1
+# ✅ Usa l'ID del foglio invece del nome
+SHEET_ID = "1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs"
+sheet = client.open_by_key(SHEET_ID).sheet1
 
 # Funzione per aggiungere una voce
 def aggiungi_voce(tipo, descrizione, importo):
