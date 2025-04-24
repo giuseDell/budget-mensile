@@ -17,14 +17,14 @@ sheet = client.open_by_key(SHEET_ID).sheet1
 righe = sheet.get_all_values()
 header, dati = righe[0], righe[1:] if len(righe) > 1 else []
 
-# Navigazione tra pagine
-pagina = st.sidebar.radio("📁 Navigazione", ["📊 Riepilogo", "📋 Dettaglio voci"])
-
 # Mesi disponibili
 mesi = sorted(set(r[0][:7] for r in dati))  # YYYY-MM
 
-# ↩️ Pagina 1 – Riepilogo e inserimento
-if pagina == "📊 Riepilogo":
+# Navigazione a tab
+tab1, tab2 = st.tabs(["📊 Riepilogo", "📋 Dettaglio voci"])
+
+# ↩️ Tab 1 – Riepilogo e inserimento
+with tab1:
     st.title("📊 Budget Mensile")
     st.markdown("Registra nuove entrate/spese e consulta il riepilogo mensile.")
 
@@ -33,11 +33,10 @@ if pagina == "📊 Riepilogo":
         col1, col2 = st.columns(2)
         tipo = col1.selectbox("Tipo di voce", ["Entrata", "Spesa"])
         descrizione = col2.text_input("Descrizione")
-        importo = st.text_input("Importo (€)")  # accetta sia virgola che punto
+        importo = st.text_input("Importo (€)")  # accetta virgola o punto
         invia = st.form_submit_button("Aggiungi")
         if invia and descrizione and importo:
             try:
-                # Conversione sicura
                 importo_float = float(importo.replace(",", "."))
                 oggi = datetime.datetime.now().strftime("%Y-%m-%d")
                 sheet.append_row([oggi, tipo, descrizione, str(importo_float)])
@@ -69,12 +68,11 @@ if pagina == "📊 Riepilogo":
         col2.metric("Spese", f"{spese:.2f} €")
         col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
 
-# ↪️ Pagina 2 – Dettaglio voci
-elif pagina == "📋 Dettaglio voci":
+# ↪️ Tab 2 – Dettaglio voci
+with tab2:
     st.title("📋 Dettaglio voci")
     st.markdown("Consulta tutte le voci registrate per il mese selezionato.")
 
-    # 📅 Selezione mese
     mese_selezionato = st.selectbox("📅 Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
 
     voci_filtrate = []
@@ -88,7 +86,6 @@ elif pagina == "📋 Dettaglio voci":
                 except ValueError:
                     continue
 
-    # Visualizza voci filtrate
     if voci_filtrate:
         for r in voci_filtrate:
             data_formattata = datetime.datetime.strptime(r[0], "%Y-%m-%d").strftime("%d:%m:%Y")
