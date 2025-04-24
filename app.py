@@ -38,7 +38,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.nome_cognome = ""
 
-# === LOGIN UI ===
+# === INTERFACCIA LOGIN ===
 if not st.session_state.logged_in:
     st.title("🔐 Accedi o Registrati")
     scelta = st.radio("Seleziona", ["Login", "Registrazione"])
@@ -98,60 +98,58 @@ else:
                 except:
                     st.error("Importo non valido")
 
-        st.subheader("📈 Riepilogo tabellare")
+        st.subheader("📈 Riepilogo")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
 
         if mese:
-            dati_filtrati = [
-                r for r in dati_utente if r[0].startswith(mese)
-            ]
-            df = pd.DataFrame(dati_filtrati, columns=["Data", "Utente", "Tipo", "Descrizione", "Importo"])
-            df["Importo"] = df["Importo"].astype(str).str.replace(",", ".").astype(float)
-            df_stile = df.style.applymap(
-                lambda v: "color: green" if v == "Entrata" else "color: red", subset=["Tipo"]
-            )
+            entrate = spese = 0.0
+            for r in dati_utente:
+                if r[0].startswith(mese):
+                    try:
+                        imp = float(r[4].replace(",", ".").replace("€", "").strip())
+                        if r[2].lower() == "entrata":
+                            entrate += imp
+                        elif r[2].lower() == "spesa":
+                            spese += imp
+                    except:
+                        continue
+            saldo = entrate - spese
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Entrate", f"{entrate:.2f} €")
+            c2.metric("Spese", f"{spese:.2f} €")
+            c3.metric("Risparmio", f"{saldo:.2f} €", delta=f"{saldo:.2f} €")
 
-            st.dataframe(df_stile, use_container_width=True)
-
-            # Esporta CSV
-            csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button("⬇️ Esporta CSV", data=csv, file_name=f"riepilogo_{mese}.csv", mime="text/csv")
-
-    # === 📋 DETTAGLIO VOCI ===
+    # === 📋 DETTAGLIO VOCI - tabella interattiva ===
     with tabs[1]:
         st.title("📋 Dettaglio voci")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
 
         if mese:
-            for idx, r in enumerate(dati_utente):
-                if r[0].startswith(mese):
-                    imp = r[4].replace(",", ".").replace("€", "").strip()
-                    try:
-                        imp_float = float(imp)
-                        data_fmt = datetime.datetime.strptime(r[0], "%Y-%m-%d").strftime("%d:%m:%Y")
-                        colore = "green" if r[2].lower() == "entrata" else "red"
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            st.markdown(
-                                f"<span style='color:{colore}'>{data_fmt} | {r[3]} | {imp_float:.2f} €</span>",
-                                unsafe_allow_html=True
-                            )
-                        with col2:
-                            if st.button("❌", key=f"del_{idx}"):
-                                tutte = sheet_dati.get_all_values()
-                                header, righe = tutte[0], tutte[1:]
-                                for i, row in enumerate(righe):
-                                    if row == r:
-                                        sheet_dati.delete_rows(i + 2)
-                                        st.rerun()
-                    except:
-                        continue
+            dettagli = [r for r in dati_utente if r[0].startswith(mese)]
+            df = pd.DataFrame(dettagli, columns=["Data", "Utente", "Tipo", "Descrizione", "Importo"])
+            df["Importo"] = df["Importo"].astype(str).str.replace(",", ".").astype(float)
+
+            # Mostra tabella
+            df_stile = df.style.applymap(
+                lambda v: "color: green" if v == "Entrata" else "color: red", subset=["Tipo"]
+            )
+            st.dataframe(df_stile, use_container_width=True)
+
+            # Elimina ogni voce
+            for idx, r in enumerate(dettagli):
+                col1, col2 = st.columns([10, 1])
+                with col2:
+                    if st.button("❌", key=f"del_{idx}"):
+                        tutte = sheet_dati.get_all_values()
+                        for i, row in enumerate(tutte[1:]):
+                            if row == r:
+                                sheet_dati.delete_rows(i + 2)
+                                st.rerun()
 
     # === 📄 GOOGLE SHEET (solo Giuseppe) ===
     if "📄 Google Sheet" in tab_titles:
         with tabs[2]:
             st.title("📄 Google Sheet")
-            st.markdown("Modifica diretta sul file:")
             st.markdown(
                 "[🔗 Vai al foglio Google Sheets](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
                 unsafe_allow_html=True
