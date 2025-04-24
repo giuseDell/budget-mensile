@@ -10,7 +10,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(creds_dict), scope
 client = gspread.authorize(creds)
 
 # Sostituisci con il nome reale del tuo Google Sheet
-SHEET_NAME = "BudgetMensile"
+SHEET_NAME = "Budget-Annuale"
 sheet = client.open(SHEET_NAME).sheet1
 
 # Funzione per aggiungere una voce
