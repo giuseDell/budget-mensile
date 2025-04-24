@@ -67,11 +67,16 @@ if mese_selezionato:
     col3.metric("Risparmio", f"{risparmio:.2f} €", delta=f"{risparmio:.2f} €")
 
     # 📋 Mostra elenco voci
-    st.subheader("📋 Dettaglio voci")
-    if voci_filtrate:
-        for r in voci_filtrate:
-            st.write(f"{r[0]} - {r[1]}: {r[2]} ({r[3]} €)")
-    else:
-        st.info("Nessuna voce registrata per questo mese.")
+  # 📋 Mostra elenco voci
+st.subheader("📋 Dettaglio voci")
+if voci_filtrate:
+    for r in voci_filtrate:
+        colore = "green" if r[1].lower() == "entrata" else "red"
+        st.markdown(
+            f"<span style='color:{colore}; font-weight:bold'>{r[0]} - {r[1]}: {r[2]} ({r[3]} €)</span>",
+            unsafe_allow_html=True
+        )
+else:
+    st.info("Nessuna voce registrata per questo mese.")
 else:
     st.info("Nessun dato disponibile.")
