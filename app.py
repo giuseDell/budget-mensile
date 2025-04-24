@@ -76,7 +76,7 @@ if voci_filtrate:
             f"<span style='color:{colore}; font-weight:bold'>{r[0]} - {r[1]}: {r[2]} ({r[3]} €)</span>",
             unsafe_allow_html=True
         )
-else:
-    st.info("Nessuna voce registrata per questo mese.")
+    else:
+        st.info("Nessuna voce registrata per questo mese.")
 else:
     st.info("Nessun dato disponibile.")
