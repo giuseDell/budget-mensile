@@ -24,7 +24,6 @@ tab1, tab2, tab3 = st.tabs(["📊 Riepilogo", "📋 Dettaglio voci", "📄 Googl
 # ↩️ Tab 1 – Riepilogo e inserimento
 with tab1:
     st.title("📊 Budget Mensile")
-    st.markdown("Registra nuove entrate/spese e consulta il riepilogo mensile.")
 
     # ➕ Form per aggiungere voce
     with st.form("aggiungi_voce"):
