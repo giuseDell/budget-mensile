@@ -33,12 +33,17 @@ if pagina == "📊 Riepilogo":
         col1, col2 = st.columns(2)
         tipo = col1.selectbox("Tipo di voce", ["Entrata", "Spesa"])
         descrizione = col2.text_input("Descrizione")
-        importo = st.number_input("Importo (€)", step=1.0)
+        importo = st.text_input("Importo (€)")  # accetta sia virgola che punto
         invia = st.form_submit_button("Aggiungi")
         if invia and descrizione and importo:
-            oggi = datetime.datetime.now().strftime("%Y-%m-%d")
-            sheet.append_row([oggi, tipo, descrizione, importo])
-            st.success(f"{tipo} aggiunta: {descrizione} - {importo} €")
+            try:
+                # Conversione sicura
+                importo_float = float(importo.replace(",", "."))
+                oggi = datetime.datetime.now().strftime("%Y-%m-%d")
+                sheet.append_row([oggi, tipo, descrizione, str(importo_float)])
+                st.success(f"{tipo} aggiunta: {descrizione} - {importo_float} €")
+            except ValueError:
+                st.error("Importo non valido. Usa numeri con virgola o punto.")
 
     # 📈 Riepilogo
     entrate = spese = 0.0
@@ -50,7 +55,7 @@ if pagina == "📊 Riepilogo":
             data, tipo, descr, imp = r
             if data.startswith(mese_selezionato):
                 try:
-                    imp = float(imp)
+                    imp = float(imp.replace(",", "."))
                     if tipo.lower() == "entrata":
                         entrate += imp
                     elif tipo.lower() == "spesa":
@@ -78,7 +83,7 @@ elif pagina == "📋 Dettaglio voci":
             data, tipo, descr, imp = r
             if data.startswith(mese_selezionato):
                 try:
-                    imp = float(imp)
+                    imp = float(imp.replace(",", "."))
                     voci_filtrate.append((data, tipo, descr, imp))
                 except ValueError:
                     continue
