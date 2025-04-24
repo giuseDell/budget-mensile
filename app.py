@@ -1,5 +1,6 @@
 import streamlit as st
 import gspread
+import pandas as pd
 from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 
@@ -28,7 +29,7 @@ def registra(nome, cognome, password):
     records = sheet_utenti.get_all_records()
     for r in records:
         if r["nome"].strip().lower() == nome.strip().lower() and r["cognome"].strip().lower() == cognome.strip().lower():
-            return False  # già registrato
+            return False
     sheet_utenti.append_row([nome, cognome, password])
     return True
 
@@ -37,7 +38,7 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.nome_cognome = ""
 
-# === INTERFACCIA ===
+# === LOGIN UI ===
 if not st.session_state.logged_in:
     st.title("🔐 Accedi o Registrati")
     scelta = st.radio("Seleziona", ["Login", "Registrazione"])
@@ -66,22 +67,17 @@ if not st.session_state.logged_in:
 # === APP AUTENTICATA ===
 else:
     nome_cognome = st.session_state.nome_cognome
-
-    # Tabs dinamiche
     tab_titles = ["📊 Riepilogo", "📋 Dettaglio"]
     if nome_cognome == "Giuseppe Dell'Ali":
         tab_titles.append("📄 Google Sheet")
-
     tabs = st.tabs(tab_titles)
 
-    # Carica dati personali
-    tutte_le_righe = sheet_dati.get_all_values()
-    header = tutte_le_righe[0]
-    righe = tutte_le_righe[1:]
+    # === CARICA DATI PERSONALI ===
+    righe = sheet_dati.get_all_values()[1:]
     dati_utente = [r for r in righe if r[1] == nome_cognome]
     mesi = sorted(set(r[0][:7] for r in dati_utente))
 
-    # === 📊 Riepilogo ===
+    # === 📊 RIEPILOGO ===
     with tabs[0]:
         st.title("📊 Riepilogo")
         st.markdown(f"Benvenuto **{nome_cognome}**")
@@ -99,60 +95,68 @@ else:
                     sheet_dati.append_row([oggi, nome_cognome, tipo, descrizione, str(imp)])
                     st.success(f"{tipo} registrata: {descrizione} - {imp} €")
                     st.rerun()
-                except Exception as e:
-                    st.error(f"Importo non valido: {e}")
+                except:
+                    st.error("Importo non valido")
 
-        st.subheader("📈 Riepilogo")
+        st.subheader("📈 Riepilogo tabellare")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
 
         if mese:
-            entrate = spese = 0.0
-            for r in dati_utente:
-                if r[0].startswith(mese):
-                    try:
-                        imp = float(r[4].replace(",", ".").replace("€", "").strip())
-                        if r[2].lower() == "entrata":
-                            entrate += imp
-                        elif r[2].lower() == "spesa":
-                            spese += imp
-                    except:
-                        continue
-            saldo = entrate - spese
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Entrate", f"{entrate:.2f} €")
-            c2.metric("Spese", f"{spese:.2f} €")
-            c3.metric("Risparmio", f"{saldo:.2f} €", delta=f"{saldo:.2f} €")
+            dati_filtrati = [
+                r for r in dati_utente if r[0].startswith(mese)
+            ]
+            df = pd.DataFrame(dati_filtrati, columns=["Data", "Utente", "Tipo", "Descrizione", "Importo"])
+            df["Importo"] = df["Importo"].astype(str).str.replace(",", ".").astype(float)
+            df_stile = df.style.applymap(
+                lambda v: "color: green" if v == "Entrata" else "color: red", subset=["Tipo"]
+            )
 
-    # === 📋 Dettaglio ===
+            st.dataframe(df_stile, use_container_width=True)
+
+            # Esporta CSV
+            csv = df.to_csv(index=False).encode("utf-8")
+            st.download_button("⬇️ Esporta CSV", data=csv, file_name=f"riepilogo_{mese}.csv", mime="text/csv")
+
+    # === 📋 DETTAGLIO VOCI ===
     with tabs[1]:
         st.title("📋 Dettaglio voci")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="dettaglio_mese") if mesi else None
 
         if mese:
-            for r in dati_utente:
+            for idx, r in enumerate(dati_utente):
                 if r[0].startswith(mese):
+                    imp = r[4].replace(",", ".").replace("€", "").strip()
                     try:
-                        imp = float(r[4].replace(",", ".").replace("€", "").strip())
-                        data = datetime.datetime.strptime(r[0], "%Y-%m-%d").strftime("%d:%m:%Y")
+                        imp_float = float(imp)
+                        data_fmt = datetime.datetime.strptime(r[0], "%Y-%m-%d").strftime("%d:%m:%Y")
                         colore = "green" if r[2].lower() == "entrata" else "red"
-                        st.markdown(
-                            f"<span style='color:{colore}'>{data} | {r[3]} | {imp} €</span>",
-                            unsafe_allow_html=True
-                        )
+                        col1, col2 = st.columns([4, 1])
+                        with col1:
+                            st.markdown(
+                                f"<span style='color:{colore}'>{data_fmt} | {r[3]} | {imp_float:.2f} €</span>",
+                                unsafe_allow_html=True
+                            )
+                        with col2:
+                            if st.button("❌", key=f"del_{idx}"):
+                                tutte = sheet_dati.get_all_values()
+                                header, righe = tutte[0], tutte[1:]
+                                for i, row in enumerate(righe):
+                                    if row == r:
+                                        sheet_dati.delete_rows(i + 2)
+                                        st.rerun()
                     except:
                         continue
 
-    # === 📄 Google Sheet (solo Giuseppe) ===
+    # === 📄 GOOGLE SHEET (solo Giuseppe) ===
     if "📄 Google Sheet" in tab_titles:
         with tabs[2]:
             st.title("📄 Google Sheet")
-            st.markdown("Puoi modificare il file manualmente qui:")
+            st.markdown("Modifica diretta sul file:")
             st.markdown(
-                "[🔗 Vai al foglio completo su Google Sheets](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
+                "[🔗 Vai al foglio Google Sheets](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
                 unsafe_allow_html=True
             )
 
-    # 🔓 Logout
     if st.button("🔓 Logout"):
         st.session_state.logged_in = False
         st.session_state.nome_cognome = ""
