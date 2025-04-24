@@ -89,14 +89,16 @@ else:
             importo = st.text_input("Importo (€)")
             invia = st.form_submit_button("Aggiungi")
             if invia and descrizione and importo:
+                importo_pulito = importo.replace(",", ".").replace("€", "").strip()
                 try:
-                    imp = float(importo.replace(",", ".").replace("€", "").strip())
+                    imp = float(importo_pulito)
                     oggi = datetime.datetime.now().strftime("%Y-%m-%d")
                     sheet_dati.append_row([oggi, nome_cognome, tipo, descrizione, str(imp)])
                     st.success(f"{tipo} registrata: {descrizione} - {imp} €")
                     st.rerun()
-                except:
-                    st.error("Importo non valido")
+                except ValueError:
+                    st.error(f"Importo non valido: '{importo}'")
+                    st.stop()
 
         st.subheader("📈 Riepilogo")
         mese = st.selectbox("📅 Mese", mesi[::-1], key="riepilogo_mese") if mesi else None
@@ -128,7 +130,6 @@ else:
             dettagli = [r for r in dati_utente if r[0].startswith(mese)]
 
             if dettagli:
-                # Intestazioni
                 col1, col2, col3, col4, _, col6 = st.columns([2, 2, 3, 2, 1, 1])
                 col1.markdown("**Data**")
                 col2.markdown("**Tipo**")
@@ -138,22 +139,25 @@ else:
 
                 for idx, r in enumerate(dettagli):
                     data, utente, tipo, descr, imp = r
-                    imp_float = float(imp.replace(",", "."))
-                    colore = "green" if tipo.lower() == "entrata" else "red"
-                    data_fmt = datetime.datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
+                    try:
+                        imp_float = float(imp.replace(",", "."))
+                        colore = "green" if tipo.lower() == "entrata" else "red"
+                        data_fmt = datetime.datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
 
-                    c1, c2, c3, c4, _, c6 = st.columns([2, 2, 3, 2, 1, 1])
-                    c1.write(data_fmt)
-                    c2.markdown(f"<span style='color:{colore}'>{tipo}</span>", unsafe_allow_html=True)
-                    c3.write(descr)
-                    c4.write(f"{imp_float:.2f} €")
+                        c1, c2, c3, c4, _, c6 = st.columns([2, 2, 3, 2, 1, 1])
+                        c1.write(data_fmt)
+                        c2.markdown(f"<span style='color:{colore}'>{tipo}</span>", unsafe_allow_html=True)
+                        c3.write(descr)
+                        c4.write(f"{imp_float:.2f} €")
 
-                    if c6.button("❌", key=f"del_{idx}"):
-                        tutte = sheet_dati.get_all_values()
-                        for i, row in enumerate(tutte[1:]):
-                            if row == r:
-                                sheet_dati.delete_rows(i + 2)
-                                st.rerun()
+                        if c6.button("❌", key=f"del_{idx}"):
+                            tutte = sheet_dati.get_all_values()
+                            for i, row in enumerate(tutte[1:]):
+                                if row == r:
+                                    sheet_dati.delete_rows(i + 2)
+                                    st.rerun()
+                    except:
+                        continue
 
     # === 📄 GOOGLE SHEET (solo Giuseppe) ===
     if "📄 Google Sheet" in tab_titles:
