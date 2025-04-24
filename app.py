@@ -26,10 +26,6 @@ tab1, tab2 = st.tabs(["📊 Riepilogo", "📋 Dettaglio voci"])
 # ↩️ Tab 1 – Riepilogo e inserimento
 with tab1:
     st.title("📊 Budget Mensile")
-    st.markdown(
-        "[🔗 Apri il file su Google Sheets](https://docs.google.com/spreadsheets/d/1GSony_907R7rCpQFqrdpr2uXDEOmJBlEM-6nT-ETSQs/edit)",
-        unsafe_allow_html=True
-    )
     st.markdown("Registra nuove entrate/spese e consulta il riepilogo mensile.")
 
     # ➕ Form per aggiungere voce
