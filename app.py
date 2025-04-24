@@ -39,7 +39,7 @@ if "logged_in" not in st.session_state:
 
 # === INTERFACCIA ===
 if not st.session_state.logged_in:
-    st.title("🔐 Accedi o Registrati")
+    st.title("🔐 Accedi o Registrati COGLIONE")
     scelta = st.radio("Seleziona", ["Login", "Registrazione"])
 
     nome = st.text_input("Nome")
